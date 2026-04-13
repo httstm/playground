@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Minimal Solitaire</title>
+  <style>
+    :root {
+      --bg: #0b6b3a;
+      --panel: rgba(255,255,255,0.12);
+      --line: rgba(255,255,255,0.25);
+      --text: #ffffff;
+      --card-bg: #ffffff;
+      --card-back: #1f4ea3;
+      --black: #111111;
+      --red: #c62828;
+      --shadow: 0 4px 12px rgba(0,0,0,0.25);
+      --card-w: 64px;
+      --card-h: 90px;
+      --gap: 10px;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .app {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    button {
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .status {
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: repeat(2, var(--card-w)) 1fr repeat(4, var(--card-w));
+      gap: var(--gap);
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .pile, .foundation, .tableau {
+      width: var(--card-w);
+      min-height: var(--card-h);
+      border: 2px dashed var(--line);
+      border-radius: var(--radius);
+      position: relative;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .waste {
+      border-style: solid;
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .spacer { min-width: 1px; }
+
+    .tableau-row {
+      display: grid;
+      grid-template-columns: repeat(7, var(--card-w));
+      gap: var(--gap);
+      align-items: start;
+    }
+
+    .tableau {
+      min-height: 360px;
+    }
+
+    .card {
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: var(--radius);
+      background: var(--card-bg);
+      color: var(--black);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.15);
+      position: absolute;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .card.red { color: var(--red); }
+    .card.back {
+      background: linear-gradient(135deg, #2f64c6, #163a7d);
+      color: transparent;
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .card.selected {
+      outline: 3px solid #ffd54f;
+      transform: translateY(-2px);
+    }
+
+    .corner {
+      line-height: 1;
+      font-size: 16px;
+    }
+
+    .center {
+      text-align: center;
+      font-size: 22px;
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,0.75);
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .pile-label {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 4px;
+      opacity: 0.8;
+    }
+
+    @media (max-width: 560px) {
+      :root {
+        --card-w: 44px;
+        --card-h: 66px;
+        --gap: 6px;
+      }
+      .corner { font-size: 12px; }
+      .center { font-size: 16px; }
+      button { font-size: 13px; padding: 8px 10px; }
+      .status { font-size: 13px; }
+      .tableau { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <button id="newGameBtn">新規ゲーム</button>
+      <button id="drawBtn">山札をめくる</button>
+      <button id="hintBtn">ヒント</button>
+      <button id="autoBtn">Aを自動移動</button>
+      <div class="status" id="status">カードをタップして選択 → 移動先をタップ</div>
+    </div>
+
+    <div class="top-row" id="topRow">
+      <div>
+        <div class="pile" id="stock"></div>
+        <div class="pile-label">山札</div>
+      </div>
+      <div>
+        <div class="pile waste" id="waste"></div>
+        <div class="pile-label">捨て札</div>
+      </div>
+      <div class="spacer"></div>
+      <div>
+        <div class="foundation" data-foundation="0"></div>
+        <div class="pile-label">♠</div>
+      </div>
+      <div>
+        <div class="foundation" data-foundation="1"></div>
+        <div class="pile-label">♥</div>
+      </div>
+      <div>
+        <div class="foundation" data-foundation="2"></div>
+        <div class="pile-label">♦</div>
+      </div>
+      <div>
+        <div class="foundation" data-foundation="3"></div>
+        <div class="pile-label">♣</div>
+      </div>
+    </div>
+
+    <div class="tableau-row" id="tableauRow"></div>
+  </div>
+
+  <script>
+    const suits = ["♠", "♥", "♦", "♣"];
+    const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+    const foundationSuitOrder = ["♠", "♥", "♦", "♣"];
+
+    let state = null;
+    let selected = null;
+
+    function createDeck() {
+      const deck = [];
+      for (const suit of suits) {
+        for (let rank = 1; rank <= 13; rank++) {
+          deck.push({
+            id: `${suit}-${rank}-${crypto.randomUUID()}`,
+            suit,
+            rank,
+            faceUp: false,
+          });
+        }
+      }
+      return deck;
+    }
+
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function cardColor(card) {
+      return card.suit === "♥" || card.suit === "♦" ? "red" : "black";
+    }
+
+    function rankLabel(rank) {
+      return ranks[rank - 1];
+    }
+
+    function newGame() {
+      const deck = shuffle(createDeck());
+      const tableau = Array.from({ length: 7 }, () => []);
+      for (let col = 0; col < 7; col++) {
+        for (let i = 0; i <= col; i++) {
+          const card = deck.pop();
+          card.faceUp = i === col;
+          tableau[col].push(card);
+        }
+      }
+      state = {
+        stock: deck,
+        waste: [],
+        foundations: [[], [], [], []],
+        tableau,
+        stockPassDone: false,
+      };
+      selected = null;
+      setStatus("新しいゲームを開始しました");
+      render();
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    function topFaceUpCardIndex(column) {
+      for (let i = 0; i < column.length; i++) {
+        if (column[i].faceUp) return i;
+      }
+      return column.length;
+    }
+
+    function canPlaceOnTableau(card, targetColumn) {
+      if (targetColumn.length === 0) return card.rank === 13;
+      const top = targetColumn[targetColumn.length - 1];
+      if (!top.faceUp) return false;
+      return cardColor(card) !== cardColor(top) && card.rank === top.rank - 1;
+    }
+
+    function canPlaceOnFoundation(card, foundationIndex) {
+      const pile = state.foundations[foundationIndex];
+      const expectedSuit = foundationSuitOrder[foundationIndex];
+      if (card.suit !== expectedSuit) return false;
+      if (pile.length === 0) return card.rank === 1;
+      const top = pile[pile.length - 1];
+      return card.rank === top.rank + 1;
+    }
+
+    function revealLastIfNeeded(columnIndex) {
+      const column = state.tableau[columnIndex];
+      if (column.length > 0) {
+        const top = column[column.length - 1];
+        if (!top.faceUp) top.faceUp = true;
+      }
+    }
+
+    function drawFromStock() {
+  selected = null;
+
+  if (state.stock.length > 0) {
+    const card = state.stock.pop();
+    card.faceUp = true;
+    state.waste.push(card);
+
+    render();
+    setStatus("山札を1枚めくりました");
+    return;
+  }
+
+  // 山札が空 → waste を戻す
+  if (state.waste.length > 0) {
+    const recycled = state.waste.slice().reverse();
+
+    recycled.forEach(c => {
+      c.faceUp = false;
+    });
+
+    state.stock = recycled;
+    state.waste = [];
+
+    render();
+    setStatus("捨て札を山札に戻しました");
+    return;
+  }
+
+  setStatus("これ以上めくれるカードがありません");
+  render();
+}
+
+    function selectWaste() {
+      if (state.waste.length === 0) return;
+      selected = { source: "waste" };
+      setStatus("捨て札の一番上を選択中");
+      render();
+    }
+
+    function selectTableau(columnIndex, cardIndex) {
+      const column = state.tableau[columnIndex];
+      const card = column[cardIndex];
+      if (!card.faceUp) return;
+      selected = { source: "tableau", columnIndex, cardIndex };
+      setStatus("列のカードを選択中");
+      render();
+    }
+
+    function getSelectedCards() {
+      if (!selected) return null;
+      if (selected.source === "waste") {
+        const card = state.waste[state.waste.length - 1];
+        return card ? [card] : null;
+      }
+      if (selected.source === "tableau") {
+        return state.tableau[selected.columnIndex].slice(selected.cardIndex);
+      }
+      return null;
+    }
+
+    function moveSelectedToFoundation(index) {
+      const cards = getSelectedCards();
+      if (!cards || cards.length !== 1) {
+        setStatus("ホームには1枚ずつしか置けません");
+        return;
+      }
+      const [card] = cards;
+      if (!canPlaceOnFoundation(card, index)) {
+        setStatus("そのホームには置けません");
+        return;
+      }
+
+      if (selected.source === "waste") {
+        state.waste.pop();
+      } else {
+        state.tableau[selected.columnIndex].splice(selected.cardIndex, 1);
+        revealLastIfNeeded(selected.columnIndex);
+      }
+
+      state.foundations[index].push(card);
+      selected = null;
+      render();
+      checkWin();
+      setStatus("ホームに移動しました");
+    }
+
+    function moveSelectedToTableau(targetIndex) {
+      const cards = getSelectedCards();
+      if (!cards || cards.length === 0) return;
+      const first = cards[0];
+      const targetColumn = state.tableau[targetIndex];
+      if (!canPlaceOnTableau(first, targetColumn)) {
+        setStatus("その列には置けません");
+        return;
+      }
+
+      if (selected.source === "waste") {
+        state.waste.pop();
+      } else {
+        state.tableau[selected.columnIndex].splice(selected.cardIndex);
+        revealLastIfNeeded(selected.columnIndex);
+      }
+
+      targetColumn.push(...cards);
+      selected = null;
+      render();
+      setStatus("列に移動しました");
+    }
+
+    function clickStock() {
+      drawFromStock();
+    }
+
+    function clickWaste() {
+      if (!selected) {
+        selectWaste();
+        return;
+      }
+      selected = null;
+      render();
+      setStatus("選択を解除しました");
+    }
+
+    function clickFoundation(index) {
+      if (!selected) return;
+      moveSelectedToFoundation(index);
+    }
+
+    function clickTableau(columnIndex) {
+      const column = state.tableau[columnIndex];
+      if (!selected) {
+        if (column.length === 0) return;
+        const topFace = topFaceUpCardIndex(column);
+        if (topFace >= column.length) return;
+        selectTableau(columnIndex, topFace);
+        return;
+      }
+      moveSelectedToTableau(columnIndex);
+    }
+
+    function findHint() {
+      if (state.waste.length > 0) {
+        const wasteCard = state.waste[state.waste.length - 1];
+        for (let i = 0; i < 4; i++) {
+          if (canPlaceOnFoundation(wasteCard, i)) {
+            return `捨て札の ${label(wasteCard)} をホームへ移動できます`;
+          }
+        }
+        for (let i = 0; i < 7; i++) {
+          if (canPlaceOnTableau(wasteCard, state.tableau[i])) {
+            return `捨て札の ${label(wasteCard)} を列 ${i + 1} に移動できます`;
+          }
+        }
+      }
+
+      for (let from = 0; from < 7; from++) {
+        const column = state.tableau[from];
+        for (let idx = 0; idx < column.length; idx++) {
+          const card = column[idx];
+          if (!card.faceUp) continue;
+          const moving = column.slice(idx);
+          if (moving.length === 1) {
+            for (let f = 0; f < 4; f++) {
+              if (canPlaceOnFoundation(card, f)) {
+                return `列 ${from + 1} の ${label(card)} をホームへ移動できます`;
+              }
+            }
+          }
+          for (let to = 0; to < 7; to++) {
+            if (to === from) continue;
+            if (canPlaceOnTableau(card, state.tableau[to])) {
+              return `列 ${from + 1} の ${label(card)} を列 ${to + 1} に移動できます`;
+            }
+          }
+        }
+      }
+
+      if (state.stock.length > 0) {
+        return "動ける手が見つかりません。山札をめくってください";
+      }
+      return "ごめん！配りに失敗した可能性があります。新しいゲームを試してください";
+    }
+
+    function hasAnyMove() {
+      const hint = findHint();
+      return !hint.includes("配りに失敗");
+    }
+
+    function autoMoveAces() {
+      let moved = false;
+      if (state.waste.length > 0) {
+        const c = state.waste[state.waste.length - 1];
+        const idx = foundationSuitOrder.indexOf(c.suit);
+        if (idx >= 0 && canPlaceOnFoundation(c, idx) && c.rank === 1) {
+          state.waste.pop();
+          state.foundations[idx].push(c);
+          moved = true;
+        }
+      }
+      for (let col = 0; col < 7; col++) {
+        const column = state.tableau[col];
+        if (column.length === 0) continue;
+        const top = column[column.length - 1];
+        const idx = foundationSuitOrder.indexOf(top.suit);
+        if (top.faceUp && top.rank === 1 && canPlaceOnFoundation(top, idx)) {
+          column.pop();
+          state.foundations[idx].push(top);
+          revealLastIfNeeded(col);
+          moved = true;
+        }
+      }
+      selected = null;
+      render();
+      setStatus(moved ? "A を自動でホームへ移動しました" : "移動できる A はありません");
+      checkWin();
+    }
+
+    function checkWin() {
+      const total = state.foundations.reduce((sum, pile) => sum + pile.length, 0);
+      if (total === 52) {
+        setStatus("クリアです！");
+      }
+    }
+
+    function label(card) {
+      return `${rankLabel(card.rank)}${card.suit}`;
+    }
+
+    function makeCardEl(card, options = {}) {
+      const el = document.createElement("div");
+      el.className = `card ${card.faceUp ? cardColor(card) : "back"}`;
+      if (options.selected) el.classList.add("selected");
+      if (!card.faceUp) return el;
+
+      const tl = document.createElement("div");
+      tl.className = "corner";
+      tl.textContent = `${rankLabel(card.rank)}${card.suit}`;
+      const c = document.createElement("div");
+      c.className = "center";
+      c.textContent = card.suit;
+      const br = document.createElement("div");
+      br.className = "corner";
+      br.style.alignSelf = "flex-end";
+      br.textContent = `${rankLabel(card.rank)}${card.suit}`;
+      el.append(tl, c, br);
+      return el;
+    }
+
+    function renderPileBase(container, symbol = "") {
+      container.innerHTML = "";
+      if (symbol) {
+        const ph = document.createElement("div");
+        ph.className = "placeholder";
+        ph.textContent = symbol;
+        container.appendChild(ph);
+      }
+    }
+
+    function render() {
+      const stockEl = document.getElementById("stock");
+      const wasteEl = document.getElementById("waste");
+      stockEl.innerHTML = "";
+      wasteEl.innerHTML = "";
+
+      if (state.stock.length > 0) {
+        const back = document.createElement("div");
+        back.className = "card back";
+        stockEl.appendChild(back);
+      }
+      stockEl.onclick = clickStock;
+
+      if (state.waste.length > 0) {
+        const top = state.waste[state.waste.length - 1];
+        const isSelected = selected?.source === "waste";
+        const el = makeCardEl(top, { selected: isSelected });
+        el.onclick = (e) => { e.stopPropagation(); clickWaste(); };
+        wasteEl.appendChild(el);
+      }
+      wasteEl.onclick = clickWaste;
+
+      document.querySelectorAll(".foundation").forEach((el, i) => {
+        renderPileBase(el, foundationSuitOrder[i]);
+        const pile = state.foundations[i];
+        if (pile.length > 0) {
+          el.innerHTML = "";
+          el.appendChild(makeCardEl(pile[pile.length - 1]));
+        }
+        el.onclick = () => clickFoundation(i);
+      });
+
+      const tableauRow = document.getElementById("tableauRow");
+      tableauRow.innerHTML = "";
+      for (let col = 0; col < 7; col++) {
+        const el = document.createElement("div");
+        el.className = "tableau";
+        const column = state.tableau[col];
+        if (column.length === 0) {
+          const ph = document.createElement("div");
+          ph.className = "placeholder";
+          ph.textContent = "K";
+          el.appendChild(ph);
+        }
+        column.forEach((card, idx) => {
+          const isSelected = selected?.source === "tableau" && selected.columnIndex === col && selected.cardIndex === idx;
+          const cardEl = makeCardEl(card, { selected: isSelected });
+          cardEl.style.top = `${idx * 22}px`;
+          cardEl.onclick = (e) => {
+            e.stopPropagation();
+            if (!selected) {
+              selectTableau(col, idx);
+            } else if (selected.source === "tableau" && selected.columnIndex === col && selected.cardIndex === idx) {
+              selected = null;
+              render();
+              setStatus("選択を解除しました");
+            } else {
+              clickTableau(col);
+            }
+          };
+          el.appendChild(cardEl);
+        });
+        el.onclick = () => clickTableau(col);
+        tableauRow.appendChild(el);
+      }
+    }
+
+    document.getElementById("newGameBtn").addEventListener("click", newGame);
+    document.getElementById("drawBtn").addEventListener("click", drawFromStock);
+    document.getElementById("hintBtn").addEventListener("click", () => setStatus(findHint()));
+    document.getElementById("autoBtn").addEventListener("click", autoMoveAces);
+
+    newGame();
+  </script>
+</body>
+</html>
