@@ -1,0 +1,1069 @@
+<!--
+Minimal Solitaire
+Version: rev3
+Updated: 2026-04-18
+Source: (URL)
+
+MIT License - Copyright (c) 2026 はいでい / fragment
+-->
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Minimal Solitaire</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b6b3a">
+  <style>
+    :root {
+      --bg: #0b6b3a;
+      --panel: rgba(255,255,255,0.12);
+      --line: rgba(255,255,255,0.25);
+      --text: #ffffff;
+      --card-bg: #ffffff;
+      --card-back: #1f4ea3;
+      --black: #111111;
+      --red: #c62828;
+      --shadow: 0 4px 12px rgba(0,0,0,0.25);
+      --card-w: 64px;
+      --card-h: 90px;
+      --gap: 10px;
+      --radius: 10px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .app {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    button {
+      border: 1px solid rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.12);
+      color: white;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .oracle-wrap {
+      position: relative;
+      display: inline-block;
+    }
+
+    .oracle-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: rgba(10, 50, 25, 0.97);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 10px;
+      padding: 6px;
+      z-index: 100;
+      min-width: 160px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    .oracle-menu.open { display: flex; flex-direction: column; gap: 4px; }
+
+    .oracle-menu button {
+      width: 100%;
+      text-align: left;
+      border: none;
+      background: transparent;
+      padding: 8px 12px;
+      border-radius: 7px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .oracle-menu button:hover { background: rgba(255,255,255,0.15); }
+
+    .oracle-label {
+      font-size: 11px;
+      opacity: 0.6;
+      padding: 4px 12px 2px;
+    }
+
+    .status {
+      font-size: 14px;
+      opacity: 0.95;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: repeat(2, var(--card-w)) 1fr repeat(4, var(--card-w));
+      gap: var(--gap);
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .pile, .foundation, .tableau {
+      width: var(--card-w);
+      min-height: var(--card-h);
+      border: 2px dashed var(--line);
+      border-radius: var(--radius);
+      position: relative;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .waste {
+      border-style: solid;
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .spacer { min-width: 1px; }
+
+    .tableau-row {
+      display: grid;
+      grid-template-columns: repeat(7, var(--card-w));
+      gap: var(--gap);
+      align-items: start;
+    }
+
+    .tableau {
+      min-height: 360px;
+    }
+
+    .card {
+      width: var(--card-w);
+      height: var(--card-h);
+      border-radius: var(--radius);
+      background: var(--card-bg);
+      color: var(--black);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,0.15);
+      position: absolute;
+      left: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .card.red { color: var(--red); }
+
+    .card.back {
+      background: linear-gradient(135deg, #2f64c6, #163a7d);
+      color: transparent;
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    .card.selected {
+      outline: 3px solid #ffd54f;
+      transform: translateY(-2px);
+    }
+
+    .corner {
+      line-height: 1;
+      font-size: 16px;
+    }
+
+    .center {
+      text-align: center;
+      font-size: 22px;
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,0.75);
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .pile-label {
+      text-align: center;
+      font-size: 12px;
+      margin-top: 4px;
+      opacity: 0.8;
+    }
+
+    @media (max-width: 560px) {
+      :root {
+        --card-w: 44px;
+        --card-h: 66px;
+        --gap: 6px;
+      }
+
+      .corner { font-size: 12px; }
+      .center { font-size: 16px; }
+      button { font-size: 13px; padding: 8px 10px; }
+      .status { font-size: 13px; }
+      .tableau { min-height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <button id="newGameBtn">新規ゲーム</button>
+      <button id="drawBtn">山札をめくる</button>
+      <button id="autoBtn">組札に移動</button>
+      <div class="oracle-wrap">
+        <button id="oracleBtn">聞いてみる？</button>
+        <div class="oracle-menu" id="oracleMenu">
+          <div class="oracle-label">さあどっちだ</div>
+          <button id="hintChoice">💡 ヒントをくれ</button>
+          <button id="analyzeChoice">🔍 クリアできるか解析を</button>
+        </div>
+      </div>
+      <div class="status" id="status">カードをタップして選択 → 移動先をタップ</div>
+    </div>
+
+    <div class="top-row">
+      <div>
+        <div class="pile" id="stock"></div>
+        <div class="pile-label">山札</div>
+      </div>
+      <div>
+        <div class="pile waste" id="waste"></div>
+        <div class="pile-label">捨て札</div>
+      </div>
+      <div class="spacer"></div>
+      <div>
+        <div class="foundation" data-foundation="0"></div>
+        <div class="pile-label">♠</div>
+      </div>
+      <div>
+        <div class="foundation" data-foundation="1"></div>
+        <div class="pile-label">♥</div>
+      </div>
+      <div>
+        <div class="foundation" data-foundation="2"></div>
+        <div class="pile-label">♦</div>
+      </div>
+      <div>
+        <div class="foundation" data-foundation="3"></div>
+        <div class="pile-label">♣</div>
+      </div>
+    </div>
+
+    <div class="tableau-row" id="tableauRow"></div>
+  </div>
+
+  <script>
+    const suits = ["♠", "♥", "♦", "♣"];
+    const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+    const foundationSuitOrder = ["♠", "♥", "♦", "♣"];
+    const oraclePersona = {
+      win: "クリア可能",
+      timeout: "探索は複雑",
+      lose: "クリア手順は見つからず",
+    };
+
+    let state = null;
+    let selected = null;
+
+    function createCardId(suit, rank) {
+      if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
+        return `${suit}-${rank}-${globalThis.crypto.randomUUID()}`;
+      }
+      return `${suit}-${rank}-${Date.now()}-${Math.random()}`;
+    }
+
+    function createDeck() {
+      const deck = [];
+      for (const suit of suits) {
+        for (let rank = 1; rank <= 13; rank++) {
+          deck.push({
+            id: createCardId(suit, rank),
+            suit,
+            rank,
+            faceUp: false,
+          });
+        }
+      }
+      return deck;
+    }
+
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function cardColor(card) {
+      return card.suit === "♥" || card.suit === "♦" ? "red" : "black";
+    }
+
+    function rankLabel(rank) {
+      return ranks[rank - 1];
+    }
+
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    function newGame() {
+      const deck = shuffle(createDeck());
+      const tableau = Array.from({ length: 7 }, () => []);
+
+      for (let col = 0; col < 7; col++) {
+        for (let i = 0; i <= col; i++) {
+          const card = deck.pop();
+          card.faceUp = i === col;
+          tableau[col].push(card);
+        }
+      }
+
+      state = {
+        stock: deck,
+        waste: [],
+        foundations: [[], [], [], []],
+        tableau,
+      };
+
+      selected = null;
+      setStatus("新しいゲームを開始しました");
+      render();
+      runSelfChecks();
+    }
+
+    function topFaceUpCardIndex(column) {
+      for (let i = 0; i < column.length; i++) {
+        if (column[i].faceUp) return i;
+      }
+      return column.length;
+    }
+
+    function canPlaceOnTableau(card, targetColumn) {
+      if (targetColumn.length === 0) return card.rank === 13;
+      const top = targetColumn[targetColumn.length - 1];
+      if (!top.faceUp) return false;
+      return cardColor(card) !== cardColor(top) && card.rank === top.rank - 1;
+    }
+
+    function canPlaceOnFoundation(card, foundationIndex) {
+      const pile = state.foundations[foundationIndex];
+      const expectedSuit = foundationSuitOrder[foundationIndex];
+      if (card.suit !== expectedSuit) return false;
+      if (pile.length === 0) return card.rank === 1;
+      const top = pile[pile.length - 1];
+      return card.rank === top.rank + 1;
+    }
+
+    function revealLastIfNeeded(columnIndex) {
+      const column = state.tableau[columnIndex];
+      if (column.length > 0) {
+        const top = column[column.length - 1];
+        if (!top.faceUp) top.faceUp = true;
+      }
+    }
+
+    function recycleWasteToStock() {
+      if (state.waste.length === 0) return false;
+      const recycled = state.waste.slice().reverse();
+      recycled.forEach((card) => {
+        card.faceUp = false;
+      });
+      state.stock = recycled;
+      state.waste = [];
+      return true;
+    }
+
+    function drawFromStock() {
+      selected = null;
+
+      if (state.stock.length > 0) {
+        const card = state.stock.pop();
+        card.faceUp = true;
+        state.waste.push(card);
+        render();
+        setStatus("山札を1枚めくりました");
+        return;
+      }
+
+      if (recycleWasteToStock()) {
+        render();
+        setStatus("捨て札を山札に戻しました");
+        return;
+      }
+
+      render();
+      setStatus("これ以上めくれるカードがありません");
+    }
+
+    function selectWaste() {
+      if (state.waste.length === 0) return;
+      selected = { source: "waste" };
+      setStatus("捨て札の一番上を選択中");
+      render();
+    }
+
+    function selectTableau(columnIndex, cardIndex) {
+      const column = state.tableau[columnIndex];
+      const card = column[cardIndex];
+      if (!card.faceUp) return;
+      selected = { source: "tableau", columnIndex, cardIndex };
+      setStatus("列のカードを選択中");
+      render();
+    }
+
+    function getSelectedCards() {
+      if (!selected) return null;
+
+      if (selected.source === "waste") {
+        const card = state.waste[state.waste.length - 1];
+        return card ? [card] : null;
+      }
+
+      if (selected.source === "tableau") {
+        return state.tableau[selected.columnIndex].slice(selected.cardIndex);
+      }
+
+      if (selected.source === "foundation") {
+        const pile = state.foundations[selected.foundationIndex];
+        const card = pile[pile.length - 1];
+        return card ? [card] : null;
+      }
+
+      return null;
+    }
+
+    function moveSelectedToFoundation(index) {
+      const cards = getSelectedCards();
+      if (!cards || cards.length !== 1) {
+        setStatus("ホームには1枚ずつしか置けません");
+        return;
+      }
+
+      const [card] = cards;
+      if (!canPlaceOnFoundation(card, index)) {
+        setStatus("そのホームには置けません");
+        return;
+      }
+
+      if (selected.source === "waste") {
+        state.waste.pop();
+      } else {
+        state.tableau[selected.columnIndex].splice(selected.cardIndex, 1);
+        revealLastIfNeeded(selected.columnIndex);
+      }
+
+      state.foundations[index].push(card);
+      selected = null;
+      render();
+      checkWin();
+      setStatus("ホームに移動しました");
+    }
+
+    function moveSelectedToTableau(targetIndex) {
+      const cards = getSelectedCards();
+      if (!cards || cards.length === 0) return;
+
+      const first = cards[0];
+      const targetColumn = state.tableau[targetIndex];
+      if (!canPlaceOnTableau(first, targetColumn)) {
+        setStatus("その列には置けません");
+        return;
+      }
+
+      if (selected.source === "waste") {
+        state.waste.pop();
+      } else if (selected.source === "foundation") {
+        state.foundations[selected.foundationIndex].pop();
+      } else {
+        state.tableau[selected.columnIndex].splice(selected.cardIndex);
+        revealLastIfNeeded(selected.columnIndex);
+      }
+
+      targetColumn.push(...cards);
+      selected = null;
+      render();
+      setStatus("列に移動しました");
+    }
+
+    function clickStock() {
+      drawFromStock();
+    }
+
+    function clickWaste() {
+      if (!selected) {
+        selectWaste();
+        return;
+      }
+      selected = null;
+      render();
+      setStatus("選択を解除しました");
+    }
+
+    function clickFoundation(index) {
+      const pile = state.foundations[index];
+
+      // 選択中でない → 組札のカードを選択
+      if (!selected) {
+        if (pile.length === 0) return;
+        selected = { source: "foundation", foundationIndex: index };
+        setStatus("組札のカードを選択中");
+        render();
+        return;
+      }
+
+      // 組札の同じ場所をタップ → 選択解除
+      if (selected.source === "foundation" && selected.foundationIndex === index) {
+        selected = null;
+        render();
+        setStatus("選択を解除しました");
+        return;
+      }
+
+      // 選択中に別の組札をタップ → 組札への移動は不可、選択し直す
+      if (pile.length === 0) {
+        selected = null;
+        render();
+        setStatus("選択を解除しました");
+        return;
+      }
+
+      moveSelectedToFoundation(index);
+    }
+
+    function clickTableau(columnIndex) {
+      const column = state.tableau[columnIndex];
+      if (!selected) {
+        if (column.length === 0) return;
+        const topFace = topFaceUpCardIndex(column);
+        if (topFace >= column.length) return;
+        selectTableau(columnIndex, topFace);
+        return;
+      }
+      moveSelectedToTableau(columnIndex);
+    }
+
+    function label(card) {
+      return `${rankLabel(card.rank)}${card.suit}`;
+    }
+
+    function findHint() {
+      if (state.waste.length > 0) {
+        const wasteCard = state.waste[state.waste.length - 1];
+        for (let i = 0; i < 4; i++) {
+          if (canPlaceOnFoundation(wasteCard, i)) {
+            return `捨て札の ${label(wasteCard)} をホームへ移動できます`;
+          }
+        }
+        for (let i = 0; i < 7; i++) {
+          if (canPlaceOnTableau(wasteCard, state.tableau[i])) {
+            return `捨て札の ${label(wasteCard)} を列 ${i + 1} に移動できます`;
+          }
+        }
+      }
+
+      for (let from = 0; from < 7; from++) {
+        const column = state.tableau[from];
+        for (let idx = 0; idx < column.length; idx++) {
+          const card = column[idx];
+          if (!card.faceUp) continue;
+
+          const moving = column.slice(idx);
+          if (moving.length === 1) {
+            for (let f = 0; f < 4; f++) {
+              if (canPlaceOnFoundation(card, f)) {
+                return `列 ${from + 1} の ${label(card)} をホームへ移動できます`;
+              }
+            }
+          }
+
+          for (let to = 0; to < 7; to++) {
+            if (to === from) continue;
+            if (canPlaceOnTableau(card, state.tableau[to])) {
+              return `列 ${from + 1} の ${label(card)} を列 ${to + 1} に移動できます`;
+            }
+          }
+        }
+      }
+
+      if (state.stock.length > 0) {
+        return "動ける手が見つかりません。山札をめくってください";
+      }
+
+      if (state.waste.length > 0) {
+        return "動ける手が見つかりません。もう一度山札をめくってください";
+      }
+
+      return "ごめん！配りに失敗した可能性があります。新しいゲームを試してください";
+    }
+
+    function autoMoveAces() {
+      let totalMoved = 0;
+      let moved = true;
+
+      while (moved) {
+        moved = false;
+
+        if (state.waste.length > 0) {
+          const c = state.waste[state.waste.length - 1];
+          const idx = foundationSuitOrder.indexOf(c.suit);
+          if (idx >= 0 && canPlaceOnFoundation(c, idx)) {
+            state.waste.pop();
+            state.foundations[idx].push(c);
+            moved = true;
+            totalMoved++;
+          }
+        }
+
+        for (let col = 0; col < 7; col++) {
+          const column = state.tableau[col];
+          if (column.length === 0) continue;
+          const top = column[column.length - 1];
+          const idx = foundationSuitOrder.indexOf(top.suit);
+          if (top.faceUp && canPlaceOnFoundation(top, idx)) {
+            column.pop();
+            state.foundations[idx].push(top);
+            revealLastIfNeeded(col);
+            moved = true;
+            totalMoved++;
+          }
+        }
+      }
+
+      selected = null;
+      render();
+      setStatus(totalMoved > 0 ? `${totalMoved}枚を組札に移動しました` : "移動できるカードはありません");
+      checkWin();
+    }
+
+    function checkWin() {
+      const total = state.foundations.reduce((sum, pile) => sum + pile.length, 0);
+      if (total === 52) {
+        setStatus("クリアです！");
+      }
+    }
+
+    // -------------------------------------------------------
+    // rev3 追加：クリア可否解析ロジック
+    // -------------------------------------------------------
+
+    // 【① バリデーション】全52枚が揃っているか確認する
+    function validateCards() {
+      const total = state.stock.length
+        + state.waste.length
+        + state.foundations.reduce((sum, p) => sum + p.length, 0)
+        + state.tableau.reduce((sum, p) => sum + p.length, 0);
+      if (total !== 52) {
+        return `カード枚数エラー（${total}枚検出）。新規ゲームを試してください`;
+      }
+      return null; // エラーなし
+    }
+
+    // 【② ハッシュ化】盤面を文字列に変換して「同じ状態」を検知する
+    // 重い全カード情報ではなく、組札の枚数と場札の各列の表向きカード構成だけを使う
+    function buildHash(s) {
+      const fBase = s.foundations.map((p) => p.length).join(",");
+      const tBase = s.tableau.map((col) => {
+        const faceUp = col.filter((c) => c.faceUp);
+        return faceUp.map((c) => `${c.suit}${c.rank}`).join("-");
+      }).join("|");
+      const stockLen = s.stock.length;
+      const wasteTop = s.waste.length > 0
+        ? `${s.waste[s.waste.length - 1].suit}${s.waste[s.waste.length - 1].rank}`
+        : "empty";
+      return `${fBase}::${tBase}::${stockLen}::${wasteTop}`;
+    }
+
+    // 【③ 仮想盤面でのcanPlaceOnFoundation】
+    // 本体のcanPlaceOnFoundationはglobal stateを参照するため、
+    // ソルバー用に仮想state（vs）を受け取る版を別途用意する
+    function canPlaceOnFoundationVS(card, foundationIndex, vs) {
+      const pile = vs.foundations[foundationIndex];
+      const expectedSuit = foundationSuitOrder[foundationIndex];
+      if (card.suit !== expectedSuit) return false;
+      if (pile.length === 0) return card.rank === 1;
+      const top = pile[pile.length - 1];
+      return card.rank === top.rank + 1;
+    }
+
+    // 【④ DFS探索ソルバー】仮想盤面を複製しながら手を試す
+    // maxTries: ブラウザフリーズ防止のため最大試行回数を制限
+    function solveSolitaire(initialState, maxTries = 2000) {
+      // 仮想盤面をディープコピーするヘルパー
+      function cloneState(s) {
+        return {
+          stock: s.stock.map((c) => ({ ...c })),
+          waste: s.waste.map((c) => ({ ...c })),
+          foundations: s.foundations.map((p) => p.map((c) => ({ ...c }))),
+          tableau: s.tableau.map((col) => col.map((c) => ({ ...c }))),
+        };
+      }
+
+      // 仮想盤面でrevealLastIfNeeded
+      function revealTop(vs, colIdx) {
+        const col = vs.tableau[colIdx];
+        if (col.length > 0 && !col[col.length - 1].faceUp) {
+          col[col.length - 1].faceUp = true;
+        }
+      }
+
+      // クリア判定
+      function isWin(vs) {
+        return vs.foundations.reduce((s, p) => s + p.length, 0) === 52;
+      }
+
+      const visited = new Set();
+      let tries = 0;
+
+      // スタック（DFS）：仮想盤面を積んでいく
+      const stack = [cloneState(initialState)];
+
+      while (stack.length > 0) {
+        if (tries >= maxTries) return "timeout";
+        tries++;
+
+        const vs = stack.pop();
+
+        if (isWin(vs)) return "win";
+
+        const hash = buildHash(vs);
+        if (visited.has(hash)) continue;
+        visited.add(hash);
+
+        // --- 次に試せる手を列挙して仮想盤面をスタックに積む ---
+
+        // 手A: 場札の表向きカード1枚 → 組札へ
+        for (let col = 0; col < 7; col++) {
+          const column = vs.tableau[col];
+          if (column.length === 0) continue;
+          const top = column[column.length - 1];
+          if (!top.faceUp) continue;
+          for (let f = 0; f < 4; f++) {
+            if (canPlaceOnFoundationVS(top, f, vs)) {
+              const next = cloneState(vs);
+              next.tableau[col].pop();
+              next.foundations[f].push({ ...top });
+              revealTop(next, col);
+              stack.push(next);
+            }
+          }
+        }
+
+        // 手B: 捨て札の一番上 → 組札へ
+        if (vs.waste.length > 0) {
+          const wasteTop = vs.waste[vs.waste.length - 1];
+          for (let f = 0; f < 4; f++) {
+            if (canPlaceOnFoundationVS(wasteTop, f, vs)) {
+              const next = cloneState(vs);
+              next.waste.pop();
+              next.foundations[f].push({ ...wasteTop });
+              stack.push(next);
+            }
+          }
+        }
+
+        // 手C: 場札の表向きカード列 → 別の場札列へ
+        for (let from = 0; from < 7; from++) {
+          const fromCol = vs.tableau[from];
+          const firstFaceUp = fromCol.findIndex((c) => c.faceUp);
+          if (firstFaceUp < 0) continue;
+          for (let idx = firstFaceUp; idx < fromCol.length; idx++) {
+            const movingCards = fromCol.slice(idx);
+            const topCard = movingCards[0];
+            for (let to = 0; to < 7; to++) {
+              if (to === from) continue;
+              if (canPlaceOnTableau(topCard, vs.tableau[to])) {
+                // Kを空列に動かすだけの無意味な手はスキップ
+                if (topCard.rank === 13 && vs.tableau[to].length === 0 && idx === 0) continue;
+                const next = cloneState(vs);
+                next.tableau[from].splice(idx);
+                revealTop(next, from);
+                next.tableau[to].push(...movingCards.map((c) => ({ ...c })));
+                stack.push(next);
+              }
+            }
+          }
+        }
+
+        // 手D: 捨て札の一番上 → 場札列へ
+        if (vs.waste.length > 0) {
+          const wasteTop = vs.waste[vs.waste.length - 1];
+          for (let to = 0; to < 7; to++) {
+            if (canPlaceOnTableau(wasteTop, vs.tableau[to])) {
+              const next = cloneState(vs);
+              next.waste.pop();
+              next.tableau[to].push({ ...wasteTop });
+              stack.push(next);
+            }
+          }
+        }
+
+        // 手E: 山札をめくる（1枚）
+        if (vs.stock.length > 0) {
+          const next = cloneState(vs);
+          const drawn = next.stock.pop();
+          drawn.faceUp = true;
+          next.waste.push(drawn);
+          stack.push(next);
+        }
+
+        // 手F: 捨て札を山札に戻す（山札が尽きたとき）
+        if (vs.stock.length === 0 && vs.waste.length > 0) {
+          const next = cloneState(vs);
+          const recycled = next.waste.slice().reverse().map((c) => ({ ...c, faceUp: false }));
+          next.stock = recycled;
+          next.waste = [];
+          stack.push(next);
+        }
+      }
+
+      return "lose";
+    }
+
+    // 【⑤ ボタン押下時の処理】バリデーション → 解析 → 結果表示
+    function analyzeGame() {
+      const btn = document.getElementById("oracleBtn");
+
+      // バリデーション
+      const validationError = validateCards();
+      if (validationError) {
+        setStatus(validationError);
+        return;
+      }
+
+      // 解析中の表示
+      btn.disabled = true;
+      setStatus("解析中...");
+
+      // UIの更新を画面に反映させてから重い処理を走らせるため setTimeout を挟む
+      setTimeout(() => {
+        const result = solveSolitaire(state, 2000);
+
+        btn.disabled = false;
+
+      if (result === "win") {
+        setStatus(oraclePersona.win);
+      } else if (result === "timeout") {
+        setStatus(oraclePersona.timeout);
+      } else {
+        setStatus(oraclePersona.lose);
+      }
+      }, 30);
+    }
+
+    // -------------------------------------------------------
+    // rev3 追加ここまで
+    // -------------------------------------------------------
+
+    function makeCardEl(card, options = {}) {
+      const el = document.createElement("div");
+      el.className = `card ${card.faceUp ? cardColor(card) : "back"}`;
+      if (options.selected) el.classList.add("selected");
+      if (!card.faceUp) return el;
+
+      const tl = document.createElement("div");
+      tl.className = "corner";
+      tl.textContent = `${rankLabel(card.rank)}${card.suit}`;
+
+      const c = document.createElement("div");
+      c.className = "center";
+      c.textContent = card.suit;
+
+      const br = document.createElement("div");
+      br.className = "corner";
+      br.style.alignSelf = "flex-end";
+      br.textContent = `${rankLabel(card.rank)}${card.suit}`;
+
+      el.append(tl, c, br);
+      return el;
+    }
+
+    function renderPileBase(container, symbol = "") {
+      container.innerHTML = "";
+      if (symbol) {
+        const ph = document.createElement("div");
+        ph.className = "placeholder";
+        ph.textContent = symbol;
+        container.appendChild(ph);
+      }
+    }
+
+    function render() {
+      const stockEl = document.getElementById("stock");
+      const wasteEl = document.getElementById("waste");
+      stockEl.innerHTML = "";
+      wasteEl.innerHTML = "";
+
+      if (state.stock.length > 0) {
+        const back = document.createElement("div");
+        back.className = "card back";
+        stockEl.appendChild(back);
+      }
+      stockEl.onclick = clickStock;
+
+      if (state.waste.length > 0) {
+        const top = state.waste[state.waste.length - 1];
+        const isSelected = selected?.source === "waste";
+        const el = makeCardEl(top, { selected: isSelected });
+        el.onclick = (e) => {
+          e.stopPropagation();
+          clickWaste();
+        };
+        wasteEl.appendChild(el);
+      }
+      wasteEl.onclick = clickWaste;
+
+      document.querySelectorAll(".foundation").forEach((el, i) => {
+        renderPileBase(el, foundationSuitOrder[i]);
+        const pile = state.foundations[i];
+        if (pile.length > 0) {
+          el.innerHTML = "";
+          const isSelected = selected?.source === "foundation" && selected.foundationIndex === i;
+          el.appendChild(makeCardEl(pile[pile.length - 1], { selected: isSelected }));
+        }
+        el.onclick = () => clickFoundation(i);
+      });
+
+      const tableauRow = document.getElementById("tableauRow");
+      tableauRow.innerHTML = "";
+
+      for (let col = 0; col < 7; col++) {
+        const el = document.createElement("div");
+        el.className = "tableau";
+        const column = state.tableau[col];
+
+        if (column.length === 0) {
+          const ph = document.createElement("div");
+          ph.className = "placeholder";
+          ph.textContent = "K";
+          el.appendChild(ph);
+        }
+
+        column.forEach((card, idx) => {
+          const isSelected = selected?.source === "tableau"
+            && selected.columnIndex === col
+            && selected.cardIndex === idx;
+
+          const cardEl = makeCardEl(card, { selected: isSelected });
+          cardEl.style.top = `${idx * 22}px`;
+          cardEl.onclick = (e) => {
+            e.stopPropagation();
+            if (!selected) {
+              selectTableau(col, idx);
+            } else if (
+              selected.source === "tableau"
+              && selected.columnIndex === col
+              && selected.cardIndex === idx
+            ) {
+              selected = null;
+              render();
+              setStatus("選択を解除しました");
+            } else {
+              clickTableau(col);
+            }
+          };
+          el.appendChild(cardEl);
+        });
+
+        el.onclick = () => clickTableau(col);
+        tableauRow.appendChild(el);
+      }
+    }
+
+    function assert(condition, message) {
+      if (!condition) {
+        throw new Error(`Self-check failed: ${message}`);
+      }
+    }
+
+    function runSelfChecks() {
+      try {
+        const totalCards = state.stock.length
+          + state.waste.length
+          + state.foundations.reduce((sum, pile) => sum + pile.length, 0)
+          + state.tableau.reduce((sum, pile) => sum + pile.length, 0);
+        assert(totalCards === 52, `total cards should be 52, got ${totalCards}`);
+
+        const faceUpCounts = state.tableau.map((column) => column.filter((card) => card.faceUp).length);
+        assert(faceUpCounts.every((count) => count >= 1), "each tableau column should start with at least one face-up card");
+
+        const king = { suit: "♠", rank: 13, faceUp: true };
+        const queenRed = { suit: "♥", rank: 12, faceUp: true };
+        const queenBlack = { suit: "♣", rank: 12, faceUp: true };
+        assert(canPlaceOnTableau(king, []), "king should be placeable on empty tableau");
+        assert(canPlaceOnTableau(queenRed, [{ suit: "♣", rank: 13, faceUp: true }]), "red queen should go on black king");
+        assert(!canPlaceOnTableau(queenBlack, [{ suit: "♠", rank: 13, faceUp: true }]), "black queen should not go on black king");
+      } catch (error) {
+        console.error(error);
+        setStatus("自己チェックで問題が見つかりました。コンソールを確認してください");
+      }
+    }
+
+    document.getElementById("newGameBtn").addEventListener("click", newGame);
+    document.getElementById("drawBtn").addEventListener("click", drawFromStock);
+    document.getElementById("autoBtn").addEventListener("click", autoMoveAces);
+
+    // オラクルボタン：クリックでメニュー開閉
+    const oracleBtn  = document.getElementById("oracleBtn");
+    const oracleMenu = document.getElementById("oracleMenu");
+
+    oracleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = oracleMenu.classList.toggle("open");
+      setStatus(isOpen ? "どっちが聞きたい？" : "カードをタップして選択 → 移動先をタップ");
+    });
+
+    document.getElementById("hintChoice").addEventListener("click", () => {
+      oracleMenu.classList.remove("open");
+      setStatus(findHint());
+    });
+
+    document.getElementById("analyzeChoice").addEventListener("click", () => {
+      oracleMenu.classList.remove("open");
+      analyzeGame();
+    });
+
+    // メニュー外クリックで閉じる
+    document.addEventListener("click", () => {
+      oracleMenu.classList.remove("open");
+    });
+
+    newGame();
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch((error) => {
+        console.warn("service worker registration failed", error);
+      });
+    }
+  </script>
+</body>
+</html>
