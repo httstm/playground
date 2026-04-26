@@ -2,7 +2,7 @@
 Minimal Solitaire
 Version: rev3
 Updated: 2026-04-18
-Source: (URL)
+Source: https://zenn.dev/hydrangea01/articles/9ec9982de43f19
 
 MIT License - Copyright (c) 2026 はいでい / fragment
 -->
@@ -284,11 +284,6 @@ MIT License - Copyright (c) 2026 はいでい / fragment
     const suits = ["♠", "♥", "♦", "♣"];
     const ranks = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
     const foundationSuitOrder = ["♠", "♥", "♦", "♣"];
-    const oraclePersona = {
-      win: "クリア可能",
-      timeout: "探索は複雑",
-      lose: "クリア手順は見つからず",
-    };
 
     let state = null;
     let selected = null;
@@ -870,13 +865,13 @@ MIT License - Copyright (c) 2026 はいでい / fragment
 
         btn.disabled = false;
 
-      if (result === "win") {
-        setStatus(oraclePersona.win);
-      } else if (result === "timeout") {
-        setStatus(oraclePersona.timeout);
-      } else {
-        setStatus(oraclePersona.lose);
-      }
+        if (result === "win") {
+          setStatus("クリア可能");
+        } else if (result === "timeout") {
+          setStatus("探索は複雑");
+        } else {
+          setStatus("現状からクリアは不可能");
+        }
       }, 30);
     }
 
