@@ -1,7 +1,7 @@
 {
   "name": "Minimal Solitaire",
   "short_name": "Solitaire",
-  "start_url": "./index.html",
+  "start_url": "./Minimalsolitaire.html",
   "display": "standalone",
   "background_color": "#0b6b3a",
   "theme_color": "#0b6b3a"

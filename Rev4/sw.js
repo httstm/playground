@@ -3,7 +3,7 @@ const CACHE_NAME = "solitaire-v1";
 // オフライン時に使うリソースを事前にキャッシュ
 const OFFLINE_URLS = [
   "./",
-  "./index.html"
+  "./Minimalsolitaire.html"
 ];
 
 self.addEventListener("install", (event) => {
