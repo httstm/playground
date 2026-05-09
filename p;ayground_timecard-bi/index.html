@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JFEYBM1Z3M"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+
+    gtag('config', 'G-JFEYBM1Z3M');
+  </script>
+  <title>Timecard BI PoC</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#0ea5e9"> 
+  <link rel="shortcut icon" href="./icons/favicon.ico">
+</head>
+<body>
+  <header class="app-header">
+    <h1>Timecard BI</h1>
+
+    <div class="control-area">
+      <select id="monthFilter"></select>
+      <label class="file-button">
+        📂勤怠CSVを読み込む 
+        <input type="file" id="fileInput" accept=".csv">
+      </label>
+
+      <a class="download-button" href="./sample.csv" download>
+        📄サンプルCSV
+      </a>
+    </div>
+  </header>
+
+  <div class="top-panel">
+    <div class="summary-area">
+      <div class="summary-label">合計時間</div>
+      <div id="totalTime" class="summary-value">-</div>
+    </div>
+  </div>
+  <canvas id="myChart"></canvas>
+
+    <section class="detail-section">
+    <h2>明細データ</h2>
+    <div class="table-wrapper">
+      <table class="detail-table">
+        <thead>
+          <tr>
+            <th>日付</th>
+            <th>出勤</th>
+            <th>退勤</th>
+            <th>休憩</th>
+            <th>労働時間</th>
+          </tr>
+        </thead>
+        <tbody id="detailTableBody">
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <!-- app.footer -->
+  <footer class="app-credit">
+    <a
+    href="https://capable-lantern-186.notion.site/34c377fc3a7880dbaec5ea903327a353" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">
+    Created by はいでぃ
+    </a>
+    <span class="footer-separator">|</span>
+    <a href="https://capable-lantern-186.notion.site/350377fc3a788049ae90e63c6739cf5a" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">
+    不具合・ご意見
+    </a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="./app.js"></script>
+  <script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js");
+  }
+  </script>
+</body>
+</html>

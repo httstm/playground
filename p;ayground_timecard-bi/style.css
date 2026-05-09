@@ -1,0 +1,218 @@
+body {
+  font-family: sans-serif;
+  margin: 24px;
+}
+
+/* header用CSS */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+#monthFilter {
+  appearance: none;         /* ← 重要 */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 10px 32px 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+
+  font-size: inherit;
+  cursor: pointer;
+}
+
+/* control area用CSS */
+.control-area {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* file upload用CSS */
+.file-button {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #0ea5e9;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  text-align: center;
+}
+
+.file-button input {
+  display: none;
+}
+
+/* download button用CSS */
+.download-button {
+  display: inline-block;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #ddd;
+  font-weight: bold;
+  text-decoration: none;
+  text-align: center;
+}
+
+
+/* top panel用CSS */
+.top-panel {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.summary-area {
+  min-width: 180px;
+}
+
+.summary-label {
+  font-size: 12px;
+  color: #666;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+
+/* detail table用CSS */
+.detail-section {
+  margin-top: 24px;
+}
+
+.detail-section h2 {
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.detail-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.detail-table th,
+.detail-table td {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.detail-table th {
+  background: #f3f4f6;
+  font-weight: bold;
+}
+
+.detail-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+/* footer */
+.app-credit {
+  color: #666;
+}
+
+.footer-separator {
+  display: none;
+}
+
+/* app actions */
+.app-actions {
+  color: #555;
+}
+
+  /* footerだけ右寄せ */
+.app-credit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 4px 4px;
+}
+
+.app-credit a {
+  color: inherit;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 600px) {
+  body {
+    margin: 16px;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .app-header h1 {
+    margin: 0;
+    font-size: 28px;
+  }
+
+  .control-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    font-size: 15px;
+  }
+
+  #monthFilter {
+    grid-column: 1 / -1;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 16px;
+  }
+
+  .file-button,
+  .download-button {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 8px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  .top-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .summary-value {
+    font-size: 22px;
+  }
+
+  .detail-section h2 {
+    font-size: 16px;
+  }
+}
