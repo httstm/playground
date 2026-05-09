@@ -99,6 +99,17 @@ date,start,end,break
 * ファイル選択によるCSV再読み込み
 * 画面幅に応じたレスポンシブUI切り替え
 
+## Development Note
+
+このプロジェクトは、generative AI の支援を受けて制作しています。
+
+基礎コードの生成、実装案の作成、UI調整、README作成には生成AIを使用しています。  
+作者は、要件定義、仕様判断、動作確認、公開判断、構成調整を担当しています。
+
+This project was built with generative AI assistance.  
+Generative AI was used to generate the initial codebase and support implementation, UI adjustment, and documentation.  
+The author reviewed the behavior, adjusted the structure, verified the app, and made the final publishing decisions.
+
 ## Design Intent
 
 このアプリは、勤怠データをスマートフォンから素早く確認するための小規模BIツールとして作成しました。
